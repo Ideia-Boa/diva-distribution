@@ -296,16 +296,18 @@ namespace MetaverseInk.ImageService
         private void StartFileSystemWatcher()
         {
             m_log.Info("[MI IMAGESERVICE] Starting watcher for " + m_snapsDir);
-            InitialRead(m_snapsDir);
-            watcher.Path = m_snapsDir;
-            watcher.Filter = "*.xml";
-            watcher.NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName;
+            if (InitialRead(m_snapsDir))
+            {
+                watcher.Path = m_snapsDir;
+                watcher.Filter = "*.xml";
+                watcher.NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName;
 
-            watcher.Changed += new FileSystemEventHandler(OnFileChanged);
-            watcher.Created += new FileSystemEventHandler(OnFileChanged);
-            watcher.Deleted += new FileSystemEventHandler(OnFileDeleted);
+                watcher.Changed += new FileSystemEventHandler(OnFileChanged);
+                watcher.Created += new FileSystemEventHandler(OnFileChanged);
+                watcher.Deleted += new FileSystemEventHandler(OnFileDeleted);
 
-            watcher.EnableRaisingEvents = true;
+                watcher.EnableRaisingEvents = true;
+            }
         }
 
 
@@ -324,13 +326,22 @@ namespace MetaverseInk.ImageService
         }
 
 
-        private void InitialRead(string path)
+        private bool InitialRead(string path)
         {
-            foreach (string file in Directory.GetFiles(path, "*.xml"))
+            try
             {
-                string name = Path.GetFileName(path);
-                AddImages(file, name);
+                foreach (string file in Directory.GetFiles(path, "*.xml"))
+                {
+                    string name = Path.GetFileName(path);
+                    AddImages(file, name);
+                }
             }
+            catch (Exception e)
+            {
+                m_log.WarnFormat("[MI IMAGESERVICE] Could not read {0}", path);
+                return false;
+            }
+            return true;
         }
 
         private void AddImages(string fullPath, string name)
