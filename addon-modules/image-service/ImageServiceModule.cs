@@ -121,6 +121,8 @@ namespace MetaverseInk.ImageService
 
         public void RegionLoaded(Scene scene)
         {
+            if (m_enabled)
+            StartFileSystemWatcher();
         }
 
         public void PostInitialise()
@@ -128,7 +130,6 @@ namespace MetaverseInk.ImageService
             if (m_enabled)
             {
                 InitialiseDataRequestHandler();
-                StartFileSystemWatcher();
             }
         }
 
@@ -298,16 +299,29 @@ namespace MetaverseInk.ImageService
             m_log.Info("[MI IMAGESERVICE] Starting watcher for " + m_snapsDir);
             if (InitialRead(m_snapsDir))
             {
-                watcher.Path = m_snapsDir;
-                watcher.Filter = "*.xml";
-                watcher.NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName;
+                // Try to create the directory.
+                m_log.Info("[MI IMAGESERVICE]: Creating directory " + m_snapsDir);
+                try
+                {
+                    Directory.CreateDirectory(m_snapsDir);
+                }
+                catch (Exception e)
+                {
+                    m_log.Error("[MI IMAGESERVICE]: Failed to create directory " + m_snapsDir, e);
 
-                watcher.Changed += new FileSystemEventHandler(OnFileChanged);
-                watcher.Created += new FileSystemEventHandler(OnFileChanged);
-                watcher.Deleted += new FileSystemEventHandler(OnFileDeleted);
-
-                watcher.EnableRaisingEvents = true;
+                    //This isn't a horrible problem, just disable cacheing.
+                    m_log.Error("[MI IMAGESERVICE]: Could not create directory, response cache has been disabled.");
+                }
             }
+            watcher.Path = m_snapsDir;
+            watcher.Filter = "*.xml";
+            watcher.NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName;
+
+            watcher.Changed += new FileSystemEventHandler(OnFileChanged);
+            watcher.Created += new FileSystemEventHandler(OnFileChanged);
+            watcher.Deleted += new FileSystemEventHandler(OnFileDeleted);
+
+            watcher.EnableRaisingEvents = true;
         }
 
 
@@ -338,7 +352,7 @@ namespace MetaverseInk.ImageService
             }
             catch (Exception e)
             {
-                m_log.WarnFormat("[MI IMAGESERVICE] Could not read {0}", path);
+                m_log.WarnFormat("[MI IMAGESERVICE] Could not read {0}: {1}", path, e.Message);
                 return false;
             }
             return true;
