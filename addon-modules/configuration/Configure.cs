@@ -102,7 +102,7 @@ namespace MetaverseInk.Configuration
         {
             Console.WriteLine("\n***************************************************");
             Console.WriteLine("Name of your world: " + worldName);
-            Console.WriteLine("The region owner/god account is Master Avatar with password " + masterPasswd);
+            Console.WriteLine("The owner/god account is Master Avatar with password " + masterPasswd);
             Console.WriteLine("Your loginuri is: http://" + ipAddress + ":9000");
             Console.WriteLine("***************************************************\n");
             Console.Write("Press enter to dismiss window");
