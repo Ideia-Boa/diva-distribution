@@ -153,19 +153,12 @@ namespace OpenSim.Region.CoreModules.Avatar.Inventory.Archiver.Tests
             //bool gotControlFile = false;
             bool gotObject1File = false;
             //bool gotObject2File = false;
+            string expectedObject1FileName = InventoryArchiveWriteRequest.CreateArchiveItemName(item1);
             string expectedObject1FilePath = string.Format(
-                "{0}{1}/{2}_{3}.xml",
+                "{0}{1}{2}",
                 ArchiveConstants.INVENTORY_PATH,
-                string.Format(
-                    "Objects{0}{1}", ArchiveConstants.INVENTORY_NODE_NAME_COMPONENT_SEPARATOR, objsFolder.ID),
-                item1.Name,
-                item1Id);
-
-//            string expectedObject2FileName = string.Format(
-//                "{0}_{1:000}-{2:000}-{3:000}__{4}.xml",
-//                part2.Name,
-//                Math.Round(part2.GroupPosition.X), Math.Round(part2.GroupPosition.Y), Math.Round(part2.GroupPosition.Z),
-//                part2.UUID);
+                InventoryArchiveWriteRequest.CreateArchiveFolderName(objsFolder),                                  
+                expectedObject1FileName);
 
             string filePath;
             TarArchiveReader.TarEntryType tarEntryType;
@@ -187,7 +180,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Inventory.Archiver.Tests
 //
 //                    if (fileName.StartsWith(part1.Name))
 //                    {
-                        Assert.That(filePath, Is.EqualTo(expectedObject1FilePath));
+                        Assert.That(expectedObject1FilePath, Is.EqualTo(filePath));
                         gotObject1File = true;
 //                    }
 //                    else if (fileName.StartsWith(part2.Name))
@@ -202,7 +195,7 @@ namespace OpenSim.Region.CoreModules.Avatar.Inventory.Archiver.Tests
             Assert.That(gotObject1File, Is.True, "No item1 file in archive");
 //            Assert.That(gotObject2File, Is.True, "No object2 file in archive");
 
-            // TODO: Test presence of more files and contents of files.
+            // TODO: Test presence of more files and contents of files.            
         }
         
         /// <summary>
@@ -264,24 +257,43 @@ namespace OpenSim.Region.CoreModules.Avatar.Inventory.Archiver.Tests
             CachedUserInfo userInfo 
                 = scene.CommsManager.UserProfileCacheService.GetUserDetails(userFirstName, userLastName);
 
-            InventoryItemBase foundItem 
+            InventoryItemBase foundItem1
                 = InventoryArchiveUtils.FindItemByPath(scene.InventoryService, userInfo.UserProfile.ID, itemName);
             
-            Assert.That(foundItem, Is.Not.Null, "Didn't find loaded item");
+            Assert.That(foundItem1, Is.Not.Null, "Didn't find loaded item 1");
             Assert.That(
-                foundItem.CreatorId, Is.EqualTo(item1.CreatorId), 
+                foundItem1.CreatorId, Is.EqualTo(item1.CreatorId), 
                 "Loaded item non-uuid creator doesn't match original");
             Assert.That(
-                foundItem.CreatorIdAsUuid, Is.EqualTo(userItemCreatorUuid), 
+                foundItem1.CreatorIdAsUuid, Is.EqualTo(userItemCreatorUuid), 
                 "Loaded item uuid creator doesn't match original");
-            Assert.That(foundItem.Owner, Is.EqualTo(userUuid),
+            Assert.That(foundItem1.Owner, Is.EqualTo(userUuid),
                 "Loaded item owner doesn't match inventory reciever");
+
+            // Now try loading to a root child folder            
+            UserInventoryTestUtils.CreateInventoryFolder(scene.InventoryService, userInfo.UserProfile.ID, "xA");
+            archiveReadStream = new MemoryStream(archiveReadStream.ToArray());            
+            archiverModule.DearchiveInventory(userFirstName, userLastName, "xA", archiveReadStream);
+
+            InventoryItemBase foundItem2
+                = InventoryArchiveUtils.FindItemByPath(scene.InventoryService, userInfo.UserProfile.ID, "xA/" + itemName);
+            Assert.That(foundItem2, Is.Not.Null, "Didn't find loaded item 2");
+
+            // Now try loading to a more deeply nested folder
+            UserInventoryTestUtils.CreateInventoryFolder(scene.InventoryService, userInfo.UserProfile.ID, "xB/xC");
+            archiveReadStream = new MemoryStream(archiveReadStream.ToArray());            
+            archiverModule.DearchiveInventory(userFirstName, userLastName, "xB/xC", archiveReadStream);
+
+            InventoryItemBase foundItem3
+                = InventoryArchiveUtils.FindItemByPath(scene.InventoryService, userInfo.UserProfile.ID, "xB/xC/" + itemName);
+            Assert.That(foundItem3, Is.Not.Null, "Didn't find loaded item 3");                        
         }
 
         /// <summary>
         /// Test loading a V0.1 OpenSim Inventory Archive (subject to change since there is no fixed format yet) where
         /// no account exists with the creator name
         /// </summary>
+        /// Disabled since temporary profiles have not yet been implemented.
         //[Test]
         public void TestLoadIarV0_1TempProfiles()
         {   
@@ -385,16 +397,14 @@ namespace OpenSim.Region.CoreModules.Avatar.Inventory.Archiver.Tests
             string folder2Name = "b";
             string itemName = "c.lsl";
             
-            string folder1ArchiveName 
-                = string.Format(
-                    "{0}{1}{2}", folder1Name, ArchiveConstants.INVENTORY_NODE_NAME_COMPONENT_SEPARATOR, UUID.Random());
-            string folder2ArchiveName
-                = string.Format(
-                    "{0}{1}{2}", folder2Name, ArchiveConstants.INVENTORY_NODE_NAME_COMPONENT_SEPARATOR, UUID.Random());
+            string folder1ArchiveName = InventoryArchiveWriteRequest.CreateArchiveFolderName(folder1Name, UUID.Random());
+            string folder2ArchiveName = InventoryArchiveWriteRequest.CreateArchiveFolderName(folder2Name, UUID.Random());
+            string itemArchiveName = InventoryArchiveWriteRequest.CreateArchiveItemName(itemName, UUID.Random());
+            
             string itemArchivePath
                 = string.Format(
-                    "{0}{1}/{2}/{3}", 
-                    ArchiveConstants.INVENTORY_PATH, folder1ArchiveName, folder2ArchiveName, itemName);            
+                    "{0}{1}{2}{3}", 
+                    ArchiveConstants.INVENTORY_PATH, folder1ArchiveName, folder2ArchiveName, itemArchiveName);            
 
             //Console.WriteLine("userInfo.RootFolder 2: {0}", userInfo.RootFolder);
 
