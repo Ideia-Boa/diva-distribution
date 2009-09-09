@@ -34,7 +34,7 @@ namespace MetaverseInk.Configuration
             if (masterPasswd == string.Empty)
                 masterPasswd = dbPasswd;
 
-            Console.Write("Your IP address or domain name (deafult 127.0.0.1 not reacheable from outside): ");
+            Console.Write("Your IP address or domain name (default 127.0.0.1 not reacheable from outside): ");
             ipAddress = Console.ReadLine();
             if (ipAddress == string.Empty)
                 ipAddress = "127.0.0.1";
@@ -101,11 +101,11 @@ namespace MetaverseInk.Configuration
         private static void DisplayInfo()
         {
             Console.WriteLine("\n***************************************************");
-            Console.WriteLine("Name of your world: " + worldName);
+            Console.WriteLine("Your world is " + worldName);
             Console.WriteLine("The owner/god account is Master Avatar with password " + masterPasswd);
-            Console.WriteLine("Your loginuri is: http://" + ipAddress + ":9000");
+            Console.WriteLine("Your loginuri is http://" + ipAddress + ":9000");
             Console.WriteLine("***************************************************\n");
-            Console.Write("Press enter to dismiss window");
+            Console.Write("<Press enter to exit>");
             Console.ReadLine();
         }
     }
